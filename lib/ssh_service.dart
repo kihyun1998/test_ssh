@@ -38,6 +38,43 @@ interact
     await _openTerminalWithCommand(sshCommand);
   }
 
+  static Future<void> connectSFTPWithPassword({
+    required String host,
+    required int port,
+    required String username,
+    required String password,
+  }) async {
+    // Create a temporary expect script file for SFTP
+    final tempDir = Directory.systemTemp;
+    final scriptFile = File('${tempDir.path}/sftp_connect.exp');
+    
+    final expectScript = '''#!/usr/bin/expect
+spawn sftp -o StrictHostKeyChecking=no -P $port $username@$host
+expect "password:" { send "$password\\r" }
+interact
+''';
+
+    await scriptFile.writeAsString(expectScript);
+    await Process.run('chmod', ['+x', scriptFile.path]);
+
+    await _openTerminalWithCommand(scriptFile.path);
+    
+    // Start a background process to delete the file after delay
+    Process.start('bash', ['-c', 'sleep 3; rm -f ${scriptFile.path}']);
+  }
+
+  static Future<void> connectSFTPWithKey({
+    required String host,
+    required int port,
+    required String username,
+    required String keyPath,
+  }) async {
+    final sftpCommand =
+        'sftp -i "$keyPath" -o StrictHostKeyChecking=no -P $port $username@$host';
+
+    await _openTerminalWithCommand(sftpCommand);
+  }
+
   static Future<void> _openTerminalWithCommand(String command) async {
     try {
       final result = await Process.run('osascript', [
