@@ -21,6 +21,9 @@ interact
     await Process.run('chmod', ['+x', scriptFile.path]);
 
     await _openTerminalWithCommand(scriptFile.path);
+    
+    // Start a background process to delete the file after delay
+    Process.start('bash', ['-c', 'sleep 3; rm -f ${scriptFile.path}']);
   }
 
   static Future<void> connectWithKey({
