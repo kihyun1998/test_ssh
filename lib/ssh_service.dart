@@ -32,10 +32,21 @@ interact
     required String username,
     required String keyPath,
   }) async {
-    final sshCommand =
-        'ssh -i "$keyPath" -o StrictHostKeyChecking=no $username@$host -p $port';
+    // Create a temporary script file for SSH key connection
+    final tempDir = Directory.systemTemp;
+    final scriptFile = File('${tempDir.path}/ssh_key_connect.sh');
+    
+    final shellScript = '''#!/bin/bash
+ssh -i "$keyPath" -o StrictHostKeyChecking=no $username@$host -p $port
+''';
 
-    await _openTerminalWithCommand(sshCommand);
+    await scriptFile.writeAsString(shellScript);
+    await Process.run('chmod', ['+x', scriptFile.path]);
+
+    await _openTerminalWithCommand(scriptFile.path);
+    
+    // Start a background process to delete the file after delay
+    Process.start('bash', ['-c', 'sleep 3; rm -f ${scriptFile.path}']);
   }
 
   static Future<void> connectSFTPWithPassword({
@@ -69,10 +80,21 @@ interact
     required String username,
     required String keyPath,
   }) async {
-    final sftpCommand =
-        'sftp -i "$keyPath" -o StrictHostKeyChecking=no -P $port $username@$host';
+    // Create a temporary script file for SFTP key connection
+    final tempDir = Directory.systemTemp;
+    final scriptFile = File('${tempDir.path}/sftp_key_connect.sh');
+    
+    final shellScript = '''#!/bin/bash
+sftp -i "$keyPath" -o StrictHostKeyChecking=no -P $port $username@$host
+''';
 
-    await _openTerminalWithCommand(sftpCommand);
+    await scriptFile.writeAsString(shellScript);
+    await Process.run('chmod', ['+x', scriptFile.path]);
+
+    await _openTerminalWithCommand(scriptFile.path);
+    
+    // Start a background process to delete the file after delay
+    Process.start('bash', ['-c', 'sleep 3; rm -f ${scriptFile.path}']);
   }
 
   static Future<void> _openTerminalWithCommand(String command) async {
