@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+
 import 'ssh_service.dart';
 
 void main() {
@@ -31,11 +32,11 @@ class SshConnectionPage extends StatefulWidget {
 
 class _SshConnectionPageState extends State<SshConnectionPage> {
   final _formKey = GlobalKey<FormState>();
-  final _hostController = TextEditingController();
+  final _hostController = TextEditingController(text: '192.168.136.135');
   final _portController = TextEditingController(text: '22');
-  final _usernameController = TextEditingController();
+  final _usernameController = TextEditingController(text: 'root');
   final _passwordController = TextEditingController();
-  
+
   String? _keyFilePath;
   bool _useKeyAuth = false;
   bool _isConnecting = false;
@@ -100,15 +101,15 @@ class _SshConnectionPageState extends State<SshConnectionPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Opening Terminal...')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Opening Terminal...')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connection failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Connection failed: $e')));
       }
     } finally {
       if (mounted) {
@@ -220,9 +221,11 @@ class _SshConnectionPageState extends State<SshConnectionPage> {
                       const SizedBox(height: 16),
                       SwitchListTile(
                         title: const Text('Use SSH Key Authentication'),
-                        subtitle: Text(_useKeyAuth 
-                            ? 'SSH key authentication selected' 
-                            : 'Password authentication selected'),
+                        subtitle: Text(
+                          _useKeyAuth
+                              ? 'SSH key authentication selected'
+                              : 'Password authentication selected',
+                        ),
                         value: _useKeyAuth,
                         onChanged: (value) {
                           setState(() {
@@ -236,7 +239,7 @@ class _SshConnectionPageState extends State<SshConnectionPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                _keyFilePath != null 
+                                _keyFilePath != null
                                     ? 'Key: ${_keyFilePath!.split('/').last}'
                                     : 'No key file selected',
                                 style: Theme.of(context).textTheme.bodyMedium,
@@ -256,14 +259,21 @@ class _SshConnectionPageState extends State<SshConnectionPage> {
                             labelText: 'Password',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.lock),
+                            hintText: 'Enter your password',
                           ),
                           obscureText: true,
-                          validator: _useKeyAuth ? null : (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter password';
-                            }
-                            return null;
-                          },
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          keyboardType: TextInputType.visiblePassword,
+                          textInputAction: TextInputAction.done,
+                          validator: _useKeyAuth
+                              ? null
+                              : (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter password';
+                                  }
+                                  return null;
+                                },
                         ),
                       ],
                     ],

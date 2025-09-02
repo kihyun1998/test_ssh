@@ -7,9 +7,20 @@ class SshService {
     required String username,
     required String password,
   }) async {
-    final sshCommand = 'ssh -o StrictHostKeyChecking=no $username@$host -p $port';
+    // Create a temporary expect script file
+    final tempDir = Directory.systemTemp;
+    final scriptFile = File('${tempDir.path}/ssh_connect.exp');
     
-    await _openTerminalWithCommand(sshCommand);
+    final expectScript = '''#!/usr/bin/expect
+spawn ssh -o StrictHostKeyChecking=no $username@$host -p $port
+expect "password:" { send "$password\\r" }
+interact
+''';
+
+    await scriptFile.writeAsString(expectScript);
+    await Process.run('chmod', ['+x', scriptFile.path]);
+
+    await _openTerminalWithCommand(scriptFile.path);
   }
 
   static Future<void> connectWithKey({
@@ -18,27 +29,26 @@ class SshService {
     required String username,
     required String keyPath,
   }) async {
-    final sshCommand = 'ssh -i "$keyPath" -o StrictHostKeyChecking=no $username@$host -p $port';
-    
+    final sshCommand =
+        'ssh -i "$keyPath" -o StrictHostKeyChecking=no $username@$host -p $port';
+
     await _openTerminalWithCommand(sshCommand);
   }
 
   static Future<void> _openTerminalWithCommand(String command) async {
     try {
-      final result = await Process.run(
-        'osascript',
-        [
-          '-e',
-          '''
+      final result = await Process.run('osascript', [
+        '-e',
+        '''
         tell application "Terminal"
             activate
             do script "$command"
           end tell
-          '''
-        ],
-      );
-      
+          ''',
+      ]);
+
       if (result.exitCode != 0) {
+        print("${result.stderr}");
         throw Exception('AppleScript failed: ${result.stderr}');
       }
     } catch (e) {
